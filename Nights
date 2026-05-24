@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>90s Drift / Drag Prototype</title>
+
+<style>
+  :root {
+    --bg: #050505;
+    --panel: #111;
+    --panel2: #181818;
+    --text: #f5f5f5;
+    --muted: #777;
+    --accent: #f1ea00;
+    --danger: #ff3b3b;
+    --line: rgba(241, 234, 0, 0.7);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    padding: 20px;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  #menu {
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(120deg, rgba(241,234,0,0.08), transparent 40%),
+      radial-gradient(circle at 70% 20%, rgba(241,234,0,0.1), transparent 35%),
+      #050505;
+  }
+
+  .menu-panel {
+    width: min(900px, 95vw);
+    border: 1px solid var(--line);
+    background: rgba(10,10,10,0.94);
+    padding: 22px;
+    box-shadow: 0 0 35px rgba(241,234,0,0.08);
+  }
+
+  .top-label {
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: clamp(36px, 9vw, 82px);
+    line-height: 0.9;
+    letter-spacing: -4px;
+    text-transform: uppercase;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    max-width: 620px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+
+  .garage {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin: 18px 0;
+  }
+
+  .car-card {
+    border: 1px solid #333;
+    padding: 12px;
+    background: var(--panel);
+    cursor: pointer;
+    min-height: 95px;
+  }
+
+  .car-card.selected {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(241,234,0,0.15), #111);
+  }
+
+  .car-name {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14px;
+  }
+
+  .car-stats {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+
+  .button-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    padding: 13px 18px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--accent);
+    color: #000;
+  }
+
+  #game {
+    padding: 0;
+    background: #080808;
+  }
+
+  canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      #070707;
+    background-size: 40px 40px;
+  }
+
+  .hud {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .hud-box {
+    border: 1px solid rgba(241,234,0,0.55);
+    background: rgba(0,0,0,0.72);
+    padding: 10px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hud-title {
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .hud-big {
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .controls {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .control-cluster {
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .touch-btn {
+    width: 64px;
+    height: 64px;
+    border: 1px solid rgba(241,234,0,0.55);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: rgba(0,0,0,0.65);
+    font-weight: bold;
+    user-select: none;
+  }
+
+  .touch-btn:active {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .back {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    pointer-events: auto;
+  }
+
+  .result {
+    color: var(--accent);
+  }
+</style>
+</head>
+
+<body>
+
+<section id="menu" class="screen active">
+  <div class="menu-panel">
+    <div class="top-label">ZVLBLV MOTOR SYSTEM / Prototype 001</div>
+    <h1>Night Run</h1>
+    <p class="subtitle">
+      90s Japanese drift and drag prototype. Choose a car, then run either a parking-lot drift session
+      or a 400m drag sprint. UI direction: sharp sci-fi racing terminal, black/yellow contrast, clean panels.
+    </p>
+
+    <div class="garage" id="garage"></div>
+
+    <div class="button-row">
+      <button onclick="startGame('drift')">Start Drift</button>
+      <button onclick="startGame('drag')">Start Drag</button>
+    </div>
+  </div>
+</section>
+
+<section id="game" class="screen">
+  <canvas id="canvas"></canvas>
+
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-title" id="modeLabel">DRIFT</div>
+      <div id="carLabel">CAR</div>
+      <div id="tipLabel">WASD / ARROWS. SPACE = BRAKE. R = RESET.</div>
+    </div>
+
+    <div class="hud-box">
+      <div class="hud-title">DATA</div>
+      <div class="hud-big" id="scoreLabel">0</div>
+      <div id="extraLabel">SCORE</div>
+    </div>
+  </div>
+
+  <button class="back" onclick="goMenu()">Menu</button>
+
+  <div class="controls">
+    <div class="control-cluster">
+      <div class="touch-btn" data-key="ArrowLeft">←</div>
+      <div class="touch-btn" data-key="ArrowRight">→</div>
+    </div>
+
+    <div class="control-cluster">
+      <div class="touch-btn" data-key=" ">BRK</div>
+      <div class="touch-btn" data-key="ArrowUp">GAS</div>
+    </div>
+  </div>
+</section>
+
+<script>
+const cars = [
+  { name: "Nissan Skyline GT-R R32", power: 6.8, grip: 7.5, drift: 5.8, weight: 7.2 },
+  { name: "Nissan Silvia S13", power: 5.8, grip: 5.9, drift: 8.6, weight: 5.6 },
+  { name: "Toyota Supra MK4", power: 7.7, grip: 6.4, drift: 6.3, weight: 7.8 },
+  { name: "Mazda RX-7 FD", power: 6.4, grip: 7.1, drift: 8.2, weight: 5.2 },
+  { name: "Mitsubishi Lancer Evo III", power: 6.2, grip: 8.4, drift: 5.4, weight: 6.4 },
+  { name: "Honda NSX NA1", power: 6.6, grip: 8.1, drift: 6.2, weight: 5.9 },
+  { name: "Toyota AE86", power: 4.2, grip: 5.2, drift: 8.9, weight: 4.4 },
+  { name: "Nissan 300ZX Z32", power: 6.9, grip: 6.2, drift: 6.1, weight: 7.5 },
+];
+
+let selectedCarIndex = 1;
+let selectedCar = cars[selectedCarIndex];
+
+const garage = document.getElementById("garage");
+
+function renderGarage() {
+  garage.innerHTML = "";
+
+  cars.forEach((car, index) => {
+    const card = document.createElement("div");
+    card.className = "car-card" + (index === selectedCarIndex ? " selected" : "");
+    card.onclick = () => {
+      selectedCarIndex = index;
+      selectedCar = cars[index];
+      renderGarage();
+    };
+
+    card.innerHTML = `
+      <div class="car-name">${car.name}</div>
+      <div class="car-stats">
+        PWR ${car.power} / GRIP ${car.grip}<br>
+        DRIFT ${car.drift} / WEIGHT ${car.weight}
+      </div>
+    `;
+
+    garage.appendChild(card);
+  });
+}
+
+renderGarage();
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const menuScreen = document.getElementById("menu");
+const gameScreen = document.getElementById("game");
+
+const modeLabel = document.getElementById("modeLabel");
+const carLabel = document.getElementById("carLabel");
+const scoreLabel = document.getElementById("scoreLabel");
+const extraLabel = document.getElementById("extraLabel");
+const tipLabel = document.getElementById("tipLabel");
+
+let mode = "drift";
+let keys = {};
+let running = false;
+
+let car = {
+  x: 0,
+  y: 0,
+  angle: 0,
+  speed: 0,
+  vx: 0,
+  vy: 0
+};
+
+let score = 0;
+let distance = 0;
+let dragStarted = false;
+let startTime = 0;
+let dragTime = 0;
+let falseStart = false;
+
+function resize() {
+  canvas.width = window.innerWidth * devicePixelRatio;
+  canvas.height = window.innerHeight * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+window.addEventListener("resize", resize);
+resize();
+
+function startGame(newMode) {
+  mode = newMode;
+  menuScreen.classList.remove("active");
+  gameScreen.classList.add("active");
+
+  modeLabel.textContent = mode === "drift" ? "DRIFT SESSION" : "400M DRAG";
+  carLabel.textContent = selectedCar.name;
+
+  if (mode === "drift") {
+    tipLabel.textContent = "WASD / ARROWS. SPACE = BRAKE. HOLD ANGLE + SPEED TO SCORE.";
+  } else {
+    tipLabel.textContent = "HOLD GAS AFTER GREEN. SPACE = SHIFT. DON'T JUMP THE START.";
+  }
+
+  resetGame();
+  running = true;
+  requestAnimationFrame(loop);
+}
+
+function goMenu() {
+  running = false;
+  gameScreen.classList.remove("active");
+  menuScreen.classList.add("active");
+}
+
+function resetGame() {
+  car.x = window.innerWidth / 2;
+  car.y = window.innerHeight / 2;
+  car.angle = -Math.PI / 2;
+  car.speed = 0;
+  car.vx = 0;
+  car.vy = 0;
+
+  score = 0;
+  distance = 0;
+  dragStarted = false;
+  falseStart = false;
+  startTime = performance.now() + 1800;
+  dragTime = 0;
+}
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (e.key.toLowerCase() === "r") resetGame();
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+document.querySelectorAll(".touch-btn").forEach(btn => {
+  const key = btn.dataset.key;
+
+  btn.addEventListener("touchstart", e => {
+    e.preventDefault();
+    keys[key] = true;
+  });
+
+  btn.addEventListener("touchend", e => {
+    e.preventDefault();
+    keys[key] = false;
+  });
+
+  btn.addEventListener("mousedown", e => {
+    keys[key] = true;
+  });
+
+  btn.addEventListener("mouseup", e => {
+    keys[key] = false;
+  });
+
+  btn.addEventListener("mouseleave", e => {
+    keys[key] = false;
+  });
+});
+
+function loop(now) {
+  if (!running) return;
+
+  update(now);
+  draw(now);
+
+  requestAnimationFrame(loop);
+}
+
+function update(now) {
+  if (mode === "drift") updateDrift();
+  else updateDrag(now);
+}
+
+function updateDrift() {
+  const power = selectedCar.power * 0.012;
+  const grip = selectedCar.grip * 0.004;
+  const driftFactor = selectedCar.drift * 0.0009;
+  const weight = selectedCar.weight * 0.0005;
+
+  const gas = keys.ArrowUp || keys.w;
+  const reverse = keys.ArrowDown || keys.s;
+  const left = keys.ArrowLeft || keys.a;
+  const right = keys.ArrowRight || keys.d;
+  const brake = keys[" "];
+
+  if (gas) car.speed += power;
+  if (reverse) car.speed -= power * 0.55;
+  if (brake) car.speed *= 0.94;
+
+  car.speed *= 0.985 - weight;
+  car.speed = Math.max(Math.min(car.speed, 9), -4);
+
+  const turnPower = 0.035 * Math.min(Math.abs(car.speed) / 3, 1.4);
+
+  if (left) car.angle -= turnPower;
+  if (right) car.angle += turnPower;
+
+  const forwardX = Math.cos(car.angle);
+  const forwardY = Math.sin(car.angle);
+
+  car.vx += forwardX * car.speed * 0.035;
+  car.vy += forwardY * car.speed * 0.035;
+
+  const slide = Math.abs(car.vx * -forwardY + car.vy * forwardX);
+  const gripLoss = brake ? 0.985 : 0.94 + grip;
+
+  car.vx *= gripLoss;
+  car.vy *= gripLoss;
+
+  car.x += car.vx;
+  car.y += car.vy;
+
+  wrapCar();
+
+  const angleScore = slide * Math.abs(car.speed) * selectedCar.drift;
+  if (slide > 0.75 && Math.abs(car.speed) > 2.2) {
+    score += Math.floor(angleScore);
+  }
+
+  scoreLabel.textContent = Math.floor(score);
+  extraLabel.textContent = `SLIDE ${slide.toFixed(2)} / SPEED ${Math.abs(car.speed).toFixed(1)}`;
+}
+
+function updateDrag(now) {
+  const gas = keys.ArrowUp || keys.w;
+  const shift = keys[" "];
+
+  const green = now >= startTime;
+
+  if (!green && gas) {
+    falseStart = true;
+  }
+
+  if (green && gas && !dragStarted && !falseStart) {
+    dragStarted = true;
+    dragTime = 0;
+  }
+
+  if (dragStarted) {
+    dragTime = (now - startTime) / 1000;
+
+    const power = selectedCar.power * 0.045;
+    const weightPenalty = selectedCar.weight * 0.003;
+
+    if (gas) car.speed += power - weightPenalty;
+    car.speed *= 0.992;
+
+    if (shift) car.speed *= 1.006;
+
+    car.speed = Math.min(car.speed, 18);
+    distance += car.speed * 0.72;
+    car.x += car.speed;
+  }
+
+  if (distance >= 400) {
+    extraLabel.textContent = `FINISH / ${dragTime.toFixed(2)} SEC`;
+    scoreLabel.textContent = dragTime.toFixed(2);
+    car.speed *= 0.98;
+  } else if (falseStart) {
+    scoreLabel.textContent = "FAULT";
+    extraLabel.textContent = "FALSE START";
+  } else if (!green) {
+    const countdown = ((startTime - now) / 1000).toFixed(1);
+    scoreLabel.textContent = countdown;
+    extraLabel.textContent = "WAIT FOR GREEN";
+  } else if (!dragStarted) {
+    scoreLabel.textContent = "GO";
+    extraLabel.textContent = "HIT GAS";
+  } else {
+    scoreLabel.textContent = `${Math.floor(distance)}M`;
+    extraLabel.textContent = `${dragTime.toFixed(2)} SEC / SPEED ${car.speed.toFixed(1)}`;
+  }
+
+  if (car.x > window.innerWidth + 100) car.x = -100;
+}
+
+function wrapCar() {
+  if (car.x < -40) car.x = window.innerWidth + 40;
+  if (car.x > window.innerWidth + 40) car.x = -40;
+  if (car.y < -40) car.y = window.innerHeight + 40;
+  if (car.y > window.innerHeight + 40) car.y = -40;
+}
+
+function draw(now) {
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  drawGrid();
+
+  if (mode === "drift") {
+    drawDriftArena();
+  } else {
+    drawDragStrip(now);
+  }
+
+  drawCar();
+}
+
+function drawGrid() {
+  ctx.save();
+  ctx.strokeStyle = "rgba(241,234,0,0.045)";
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x < window.innerWidth; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, window.innerHeight);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y < window.innerHeight; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(window.innerWidth, y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawDriftArena() {
+  ctx.save();
+  ctx.strokeStyle = "rgba(241,234,0,0.45)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 12]);
+
+  ctx.strokeRect(80, 100, window.innerWidth - 160, window.innerHeight - 200);
+
+  ctx.beginPath();
+  ctx.arc(window.innerWidth / 2, window.innerHeight / 2, 110, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  drawText("DRIFT ZONE", 90, window.innerHeight - 80);
+}
+
+function drawDragStrip(now) {
+  const green = now >= startTime;
+
+  ctx.save();
+
+  const y = window.innerHeight / 2;
+
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(40, y - 55);
+  ctx.lineTo(window.innerWidth - 40, y - 55);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(40, y + 55);
+  ctx.lineTo(window.innerWidth - 40, y + 55);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(241,234,0,0.7)";
+  ctx.setLineDash([20, 20]);
+
+  ctx.beginPath();
+  ctx.moveTo(80, y);
+  ctx.lineTo(window.innerWidth - 80, y);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = green ? "#f1ea00" : "#ff3b3b";
+  ctx.fillRect(75, y - 70, 10, 140);
+
+  ctx.restore();
+
+  drawText(green ? "GREEN" : "STAGE", 90, y - 90);
+}
+
+function drawText(text, x, y) {
+  ctx.save();
+  ctx.fillStyle = "rgba(241,234,0,0.8)";
+  ctx.font = "12px Arial";
+  ctx.letterSpacing = "3px";
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawCar() {
+  ctx.save();
+
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle);
+
+  const bodyColor = "#f1ea00";
+
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(-20, -34, 40, 68);
+
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-18, -32, 36, 64);
+
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(-12, -20, 24, 18);
+  ctx.fillRect(-14, 8, 28, 18);
+
+  ctx.fillStyle = "#050505";
+  ctx.fillRect(-16, -28, 6, 12);
+  ctx.fillRect(10, -28, 6, 12);
+  ctx.fillRect(-16, 18, 6, 12);
+  ctx.fillRect(10, 18, 6, 12);
+
+  ctx.restore();
+}
+</script>
+
+</body>
+</html>
