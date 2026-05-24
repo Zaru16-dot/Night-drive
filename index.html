@@ -1,26 +1,10 @@
-Yes — that direction is better. Make it a sandbox night city driving game first, not structured drift/drag yet.
-
-Core change:
-
-Instead of menu → drift/drag, make it:
-
-* Open world city map
-* Best played horizontal
-* On-screen controls
-* Random 90s Japanese car color every spawn
-* Buildings as solid collision objects
-* If you hit a building, the car bounces/stops like it actually crashed
-* Drift score can still exist in the HUD
-* Drag racing can come later as a mode inside the city
-
-For now, replace your index.html code with this updated version:
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Night Run Sandbox</title>
+
 <style>
   :root {
     --bg: #050505;
@@ -29,10 +13,12 @@ For now, replace your index.html code with this updated version:
     --accent: #f1ea00;
     --panel: rgba(0,0,0,0.72);
   }
+
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
   }
+
   body {
     margin: 0;
     overflow: hidden;
@@ -41,12 +27,14 @@ For now, replace your index.html code with this updated version:
     font-family: Arial, Helvetica, sans-serif;
     touch-action: none;
   }
+
   canvas {
     display: block;
     width: 100vw;
     height: 100vh;
     background: #050505;
   }
+
   .hud {
     position: fixed;
     top: env(safe-area-inset-top, 10px);
@@ -57,6 +45,7 @@ For now, replace your index.html code with this updated version:
     gap: 10px;
     pointer-events: none;
   }
+
   .panel {
     border: 1px solid rgba(241,234,0,.55);
     background: var(--panel);
@@ -66,15 +55,18 @@ For now, replace your index.html code with this updated version:
     font-size: 11px;
     backdrop-filter: blur(8px);
   }
+
   .title {
     color: var(--accent);
     font-weight: bold;
     margin-bottom: 3px;
   }
+
   .big {
     font-size: 19px;
     font-weight: bold;
   }
+
   .controls {
     position: fixed;
     left: 14px;
@@ -84,11 +76,13 @@ For now, replace your index.html code with this updated version:
     justify-content: space-between;
     pointer-events: none;
   }
+
   .cluster {
     display: flex;
     gap: 10px;
     pointer-events: auto;
   }
+
   .btn {
     width: 68px;
     height: 68px;
@@ -101,13 +95,16 @@ For now, replace your index.html code with this updated version:
     font-size: 17px;
     user-select: none;
   }
+
   .btn:active {
     background: var(--accent);
     color: #000;
   }
+
   .wide {
     width: 84px;
   }
+
   .rotate-warning {
     position: fixed;
     inset: 0;
@@ -119,16 +116,19 @@ For now, replace your index.html code with this updated version:
     text-align: center;
     padding: 30px;
   }
+
   .rotate-box {
     border: 1px solid var(--accent);
     padding: 22px;
     max-width: 360px;
   }
+
   .rotate-box h1 {
     margin: 0 0 10px;
     color: var(--accent);
     text-transform: uppercase;
   }
+
   @media (orientation: portrait) {
     .rotate-warning {
       display: flex;
@@ -136,41 +136,50 @@ For now, replace your index.html code with this updated version:
   }
 </style>
 </head>
+
 <body>
 <canvas id="game"></canvas>
+
 <div class="hud">
   <div class="panel">
     <div class="title">Night Run Sandbox</div>
     <div id="carName">90s JDM Test Car</div>
   </div>
+
   <div class="panel">
     <div class="title">Data</div>
     <div class="big" id="speed">0 MPH</div>
     <div id="score">DRIFT 0</div>
   </div>
 </div>
+
 <div class="controls">
   <div class="cluster">
     <div class="btn" data-key="ArrowLeft">←</div>
     <div class="btn" data-key="ArrowRight">→</div>
   </div>
+
   <div class="cluster">
     <div class="btn wide" data-key=" ">BRAKE</div>
     <div class="btn wide" data-key="ArrowUp">GAS</div>
   </div>
 </div>
+
 <div class="rotate-warning">
   <div class="rotate-box">
     <h1>Rotate Device</h1>
     <p>This prototype is built to play horizontally like a handheld racing game.</p>
   </div>
 </div>
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
 const speedLabel = document.getElementById("speed");
 const scoreLabel = document.getElementById("score");
 const carNameLabel = document.getElementById("carName");
+
 const cars = [
   "Nissan Silvia S13",
   "Nissan Skyline GT-R R32",
@@ -181,6 +190,7 @@ const cars = [
   "Mitsubishi Lancer Evo III",
   "Nissan 300ZX Z32"
 ];
+
 const colors = [
   "#f1ea00",
   "#ffffff",
@@ -192,10 +202,12 @@ const colors = [
   "#00d084",
   "#b8b8b8"
 ];
+
 let keys = {};
 let camera = { x: 0, y: 0 };
 let driftScore = 0;
 let crashFlash = 0;
+
 const car = {
   name: cars[Math.floor(Math.random() * cars.length)],
   color: colors[Math.floor(Math.random() * colors.length)],
@@ -208,30 +220,39 @@ const car = {
   width: 34,
   height: 62
 };
+
 carNameLabel.textContent = car.name;
+
 const buildings = [];
 const roads = [];
+
 function resize() {
   canvas.width = window.innerWidth * devicePixelRatio;
   canvas.height = window.innerHeight * devicePixelRatio;
   ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 }
+
 window.addEventListener("resize", resize);
 resize();
+
 function buildCity() {
   const block = 320;
   const road = 110;
   const citySize = 3600;
+
   for (let x = 0; x < citySize; x += block) {
     roads.push({ x, y: 0, w: road, h: citySize });
   }
+
   for (let y = 0; y < citySize; y += block) {
     roads.push({ x: 0, y, w: citySize, h: road });
   }
+
   for (let x = 140; x < citySize - 200; x += block) {
     for (let y = 140; y < citySize - 200; y += block) {
       const w = 120 + Math.random() * 95;
       const h = 120 + Math.random() * 95;
+
       buildings.push({
         x: x + Math.random() * 45,
         y: y + Math.random() * 45,
@@ -242,30 +263,39 @@ function buildCity() {
     }
   }
 }
+
 buildCity();
+
 window.addEventListener("keydown", e => {
   keys[e.key] = true;
+
   if (e.key.toLowerCase() === "r") {
     resetCar();
   }
 });
+
 window.addEventListener("keyup", e => {
   keys[e.key] = false;
 });
+
 document.querySelectorAll(".btn").forEach(btn => {
   const key = btn.dataset.key;
+
   btn.addEventListener("touchstart", e => {
     e.preventDefault();
     keys[key] = true;
   });
+
   btn.addEventListener("touchend", e => {
     e.preventDefault();
     keys[key] = false;
   });
+
   btn.addEventListener("mousedown", () => keys[key] = true);
   btn.addEventListener("mouseup", () => keys[key] = false);
   btn.addEventListener("mouseleave", () => keys[key] = false);
 });
+
 function resetCar() {
   car.x = 700;
   car.y = 700;
@@ -277,85 +307,115 @@ function resetCar() {
   car.name = cars[Math.floor(Math.random() * cars.length)];
   carNameLabel.textContent = car.name;
 }
+
 function update() {
   const gas = keys.ArrowUp || keys.w;
   const reverse = keys.ArrowDown || keys.s;
   const left = keys.ArrowLeft || keys.a;
   const right = keys.ArrowRight || keys.d;
   const brake = keys[" "];
+
   if (gas) car.speed += 0.19;
   if (reverse) car.speed -= 0.11;
   if (brake) car.speed *= 0.93;
+
   car.speed *= 0.985;
   car.speed = Math.max(Math.min(car.speed, 9.5), -3.8);
+
   const turnAmount = 0.038 * Math.min(Math.abs(car.speed) / 3, 1.4);
+
   if (left) car.angle -= turnAmount;
   if (right) car.angle += turnAmount;
+
   const forwardX = Math.cos(car.angle);
   const forwardY = Math.sin(car.angle);
+
   car.vx += forwardX * car.speed * 0.045;
   car.vy += forwardY * car.speed * 0.045;
+
   const slide = Math.abs(car.vx * -forwardY + car.vy * forwardX);
+
   let grip = brake ? 0.985 : 0.955;
   car.vx *= grip;
   car.vy *= grip;
+
   const oldX = car.x;
   const oldY = car.y;
+
   car.x += car.vx;
   car.y += car.vy;
+
   let crashed = false;
+
   for (const b of buildings) {
     if (car.x > b.x - 24 && car.x < b.x + b.w + 24 && car.y > b.y - 24 && car.y < b.y + b.h + 24) {
       crashed = true;
       break;
     }
   }
+
   if (crashed) {
     car.x = oldX;
     car.y = oldY;
+
     car.vx *= -0.28;
     car.vy *= -0.28;
     car.speed *= -0.22;
+
     crashFlash = 12;
   }
+
   if (slide > 0.75 && Math.abs(car.speed) > 2.1 && !crashed) {
     driftScore += Math.floor(slide * Math.abs(car.speed) * 2.4);
   }
+
   camera.x += (car.x - window.innerWidth / 2 - camera.x) * 0.09;
   camera.y += (car.y - window.innerHeight / 2 - camera.y) * 0.09;
+
   speedLabel.textContent = `${Math.floor(Math.abs(car.speed) * 13)} MPH`;
   scoreLabel.textContent = `DRIFT ${Math.floor(driftScore)}`;
+
   if (crashFlash > 0) crashFlash--;
 }
+
 function draw() {
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
+
   drawGround();
   drawRoads();
   drawBuildings();
   drawCar();
+
   ctx.restore();
+
   if (crashFlash > 0) {
     ctx.fillStyle = `rgba(255, 40, 40, ${crashFlash / 38})`;
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
   }
 }
+
 function drawGround() {
   ctx.fillStyle = "#050505";
   ctx.fillRect(camera.x, camera.y, window.innerWidth, window.innerHeight);
+
   ctx.strokeStyle = "rgba(241,234,0,0.035)";
   ctx.lineWidth = 1;
+
   const startX = Math.floor(camera.x / 80) * 80;
   const endX = camera.x + window.innerWidth + 80;
   const startY = Math.floor(camera.y / 80) * 80;
   const endY = camera.y + window.innerHeight + 80;
+
   for (let x = startX; x < endX; x += 80) {
     ctx.beginPath();
     ctx.moveTo(x, startY);
     ctx.lineTo(x, endY);
     ctx.stroke();
   }
+
   for (let y = startY; y < endY; y += 80) {
     ctx.beginPath();
     ctx.moveTo(startX, y);
@@ -363,15 +423,19 @@ function drawGround() {
     ctx.stroke();
   }
 }
+
 function drawRoads() {
   for (const r of roads) {
     ctx.fillStyle = "#111";
     ctx.fillRect(r.x, r.y, r.w, r.h);
+
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 2;
     ctx.strokeRect(r.x, r.y, r.w, r.h);
+
     ctx.strokeStyle = "rgba(241,234,0,0.32)";
     ctx.setLineDash([22, 22]);
+
     if (r.w > r.h) {
       ctx.beginPath();
       ctx.moveTo(r.x, r.y + r.h / 2);
@@ -383,18 +447,24 @@ function drawRoads() {
       ctx.lineTo(r.x + r.w / 2, r.y + r.h);
       ctx.stroke();
     }
+
     ctx.setLineDash([]);
   }
 }
+
 function drawBuildings() {
   for (const b of buildings) {
     const brightness = 22 + b.shade * 30;
+
     ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
     ctx.fillRect(b.x, b.y, b.w, b.h);
+
     ctx.strokeStyle = "rgba(241,234,0,0.28)";
     ctx.lineWidth = 2;
     ctx.strokeRect(b.x, b.y, b.w, b.h);
+
     ctx.fillStyle = "rgba(241,234,0,0.12)";
+
     for (let wx = b.x + 15; wx < b.x + b.w - 10; wx += 25) {
       for (let wy = b.y + 15; wy < b.y + b.h - 10; wy += 25) {
         if (Math.random() > 0.5) {
@@ -404,37 +474,41 @@ function drawBuildings() {
     }
   }
 }
+
 function drawCar() {
   ctx.save();
+
   ctx.translate(car.x, car.y);
   ctx.rotate(car.angle);
+
   ctx.fillStyle = "rgba(0,0,0,0.55)";
   ctx.fillRect(-car.width / 2 - 3, -car.height / 2 - 3, car.width + 6, car.height + 6);
+
   ctx.fillStyle = car.color;
   ctx.fillRect(-car.width / 2, -car.height / 2, car.width, car.height);
+
   ctx.fillStyle = "#050505";
   ctx.fillRect(-11, -22, 22, 14);
   ctx.fillRect(-13, 8, 26, 16);
+
   ctx.fillStyle = "rgba(255,255,255,0.75)";
   ctx.fillRect(-13, -car.height / 2 - 2, 8, 4);
   ctx.fillRect(5, -car.height / 2 - 2, 8, 4);
+
   ctx.fillStyle = "rgba(255,0,0,0.8)";
   ctx.fillRect(-13, car.height / 2 - 2, 8, 4);
   ctx.fillRect(5, car.height / 2 - 2, 8, 4);
+
   ctx.restore();
 }
+
 function loop() {
   update();
   draw();
   requestAnimationFrame(loop);
 }
+
 loop();
 </script>
 </body>
 </html>
-
-Important: this version is not really drag racing yet. It’s the better foundation: city, driving, drifting, buildings, crash collision, phone controls, horizontal play.
-
-Also, one small fix: on GitHub your file looks like it may be named index.html. with a period at the end. It has to be exactly:
-
-index.html
